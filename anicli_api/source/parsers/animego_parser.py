@@ -216,6 +216,22 @@ class AnimeView(_BaseStructParser):
     def view(self) -> _T_DICT_ITEM:
         return self._cached_result
 
+    @staticmethod
+    def parse_view_status(doc: Selector):
+        items = doc.css('.list-group.mt-minus-1 .list-group-item')
+
+        other_status = {}
+        for item in items:
+            text = item.xpath('text()').get()
+            data_url = item.xpath('@data-ajax-url').get()
+            number = data_url.split('/')[-2]
+            other_status[text] = int(number)
+        
+        my_status = doc.css('.text-underline-hover')[0].xpath('text()').get().strip()
+        if my_status == "Добавить в список": my_status = None
+        
+        return {"my_status": my_status, "other_status": other_status}
+    
     def _parse_title(self, doc: Selector):
         var_0 = doc
         var_1 = var_0.css(".anime-title h1")

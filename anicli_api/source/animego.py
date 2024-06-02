@@ -3,9 +3,10 @@ import re
 from typing import Dict, List
 
 from attrs import define
-from httpx import Response
+from httpx import AsyncClient, Client, Response
 from parsel import Selector
 
+from anicli_api._http import HTTPAsync, HTTPSync
 from anicli_api.base import BaseAnime, BaseEpisode, BaseExtractor, BaseOngoing, BaseSearch, BaseSource
 from anicli_api.source.parsers.animego_parser import (
     AnimeView,
@@ -18,10 +19,27 @@ from anicli_api.source.parsers.animego_parser import (
 
 _logger = logging.getLogger("anicli-api")  # type: ignore
 
+_PHPSESSID = None
+
+def set_PHPSESSID(key: str) -> None:
+    """set PHPSESSID cookie"""
+    global _PHPSESSID
+    _PHPSESSID = key
+
+def _is_authorized() -> bool:
+    http_client = HTTPSync(cookies = {"PHPSESSID": _PHPSESSID}, follow_redirects = True)
+    return _PHPSESSID and (http_client.get("https://animego.org/profile/").status_code != 500)
 
 class Extractor(BaseExtractor):
     BASE_URL = "https://animego.org"
-
+    
+    def __init__(self, http_client: "Client" = HTTPSync(), http_async_client: "AsyncClient" = HTTPAsync()):
+        if not _is_authorized():
+            super().__init__(http_client, http_async_client)
+            return
+        self._http = HTTPSync(cookies = {"PHPSESSID": _PHPSESSID})
+        self._http_async = HTTPAsync(cookies = {"PHPSESSID": _PHPSESSID})
+    
     def _extract_search(self, resp: str):
         data = SearchView(resp).parse().view()
         return [Search(**d, **self._kwargs_http) for d in data]
@@ -167,10 +185,15 @@ class Ongoing(BaseOngoing):
 class Anime(BaseAnime):
     id: str
     raw_json: str
-
+    
+    def __attrs_post_init__(self):
+        if _PHPSESSID:
+            self._http = HTTPSync(cookies={"PHPSESSID": _PHPSESSID})
+            self._http_async = HTTPAsync(cookies={"PHPSESSID": _PHPSESSID})
+    
     def _extract(self, resp: str):
         episodes_data = EpisodeView(resp).parse().view()
-
+        
         dubbers = DubbersView(resp).parse().view()
         return [Episode(**d, dubbers=dubbers, **self._kwargs_http) for d in episodes_data]
 
@@ -190,40 +213,101 @@ class Anime(BaseAnime):
         resp = self.http.get(f"https://animego.org/anime/{self.id}/player?_allow=true").json()["content"]
         return self._extract(resp) if self._episodes_is_available(resp) else []
 
+    def _get_json_info(self):
+        return Selector(self.raw_json, type="json").getall()[0]
+        
     async def a_get_episodes(self):
         resp = await self.http_async.get(f"https://animego.org/anime/{self.id}/player?_allow=true")
         resp = resp.json()["content"]
         return self._extract(resp) if self._episodes_is_available(resp) else []
 
+    def set_rate(self, stars: int) -> bool:
+        """rate the anime sync"""
+        if not _PHPSESSID: return False
+        resp = self.http.post(f"https://animego.org/rating/{self.id}/{stars}/anime/vote")
+        return (resp.status_code == 200) and (resp.json()['status'] == "success")
+    
+    async def a_set_rate(self, stars: int) -> bool:
+        """rate the anime async"""
+        if not _PHPSESSID: return False
+        resp = await self.http_async.post(f"https://animego.org/rating/{self.id}/{stars}/anime/vote")
+        return (resp.status_code == 200) and (resp.json()['status'] == "success")
+    
+    def get_view_status(self):
+        """get all the viewing status for anime sync"""
+        url: str = self._get_json_info()['url']
+        resp = self.http.get(f"https://animego.org{url}")
+        return AnimeView.parse_view_status(Selector(resp.text))
+        
+    async def a_get_view_status(self):
+        """get all the viewing status for anime async"""
+        url: str = self._get_json_info()['url']
+        resp = await self.http_async.get(f"https://animego.org{url}")
+        return AnimeView.parse_view_status(Selector(resp.text))
+    
+    def set_view_status(self, status: int = 1):
+        """set the viewing status for anime sync"""
+        if status not in [1,2,3,4,5,6]: raise ValueError()
+        if not _PHPSESSID: return False
+        resp = self.http.post(f"https://animego.org/animelist/{self.id}/{status}/add")
+        return (resp.status_code == 200) and (resp.json()['status'] == "success")
+        
+    async def a_set_view_status(self, status: int = 1):
+        """set the viewing status for anime async"""
+        if status not in [1,2,3,4,5,6]: raise ValueError()
+        if not _PHPSESSID: return False
+        resp = await self.http_async.post(f"https://animego.org/animelist/{self.id}/{status}/add")
+        return (resp.status_code == 200) and (resp.json()['status'] == "success")
 
 @define(kw_only=True)
 class Episode(BaseEpisode):
     dubbers: Dict[str, str]
     id: str  # episode id (for extract videos required)
 
+    def __attrs_post_init__(self):
+        if _PHPSESSID:
+            self._http = HTTPSync(cookies={"PHPSESSID": _PHPSESSID})
+            self._http_async = HTTPAsync(cookies={"PHPSESSID": _PHPSESSID})
+    
     def _extract(self, resp: str):
         data = SourceView(resp).parse().view()
         data_source = [
             {"title": f'{self.dubbers.get(d["data_provide_dubbing"], "???").strip()}', "url": d["url"]} for d in data
         ]
         return [Source(**d, **self._kwargs_http) for d in data_source]
-
-    def get_sources(self):
+    
+    def _get_series_data(self):
         resp = self.http.get(
             "https://animego.org/anime/series",
             params={"dubbing": 2, "provider": 24, "episode": self.num, "id": self.id},
-        ).json()["content"]
-        return self._extract(resp)
-
-    async def a_get_sources(self):
+        ).json()
+        return resp
+    
+    async def _a_get_series_data(self):
         resp = (
             await self.http_async.get(
                 "https://animego.org/anime/series",
                 params={"dubbing": 2, "provider": 24, "episode": self.num, "id": self.id},
             )
-        ).json()["content"]
+        ).json()
+    
+    def get_sources(self):
+        resp = self._get_series_data()["content"]
         return self._extract(resp)
 
+    async def a_get_sources(self):
+        resp = self._a_get_series_data()["content"]
+        return self._extract(resp)
+    
+    # TODO: finish this
+    def make_viewed(self):
+        pass
+    async def a_make_viewed(self):
+        pass
+    def make_unviewed(self):
+        pass
+    async def a_make_unviewed(self):
+        pass
 
 @define(kw_only=True)
 class Source(BaseSource):
