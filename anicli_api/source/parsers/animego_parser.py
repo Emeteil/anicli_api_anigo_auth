@@ -180,6 +180,48 @@ class SearchView(_BaseStructParser):
         var_2 = var_1.attrib["href"]
         return var_2
 
+class LibraryView(_BaseStructParser):
+    """Get all library results by query
+    {
+        "title": "String",
+        "thumbnail": "String",
+        "url": "String"
+    }
+    """
+
+    def __init__(self, document: str):
+        super().__init__(document)
+        self._cached_result: _T_LIST_ITEMS = []
+
+    def _part_document(self) -> SelectorList:
+        doc = self.__selector__
+        return doc.css("tr")
+
+    def _start_parse(self):
+        self._cached_result.clear()
+        for part in self._part_document():
+            self._cached_result.append(
+                {
+                    "title": self._parse_title(part),
+                    "thumbnail": "",
+                    "url": self._parse_url(part),
+                }
+            )
+
+    def view(self) -> _T_LIST_ITEMS:
+        return self._cached_result
+
+    def _parse_title(self, doc: Selector):
+        var_0 = doc
+        var_1 = var_0.css(".table-100 a")
+        var_2 = var_1.xpath('text()').get()
+        return var_2
+
+    def _parse_url(self, doc: Selector):
+        var_0 = doc
+        var_1 = var_0.css(".table-100 a")
+        var_2 = var_1.attrib["href"]
+        return "https://animego.org" + var_2
 
 class AnimeView(_BaseStructParser):
     """Anime page information. anime path contains in SearchView.url or Ongoing.urk

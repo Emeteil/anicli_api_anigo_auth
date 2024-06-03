@@ -111,6 +111,27 @@ class _HttpExtension:
         """shortcut for pass http arguments in kwargs style"""
         return {"http": self.http, "http_async": self.http_async}
 
+@define(kw_only=True)
+class BaseLibrary(_HttpExtension):
+    title: str
+    """Search item name"""
+    thumbnail: str
+    """Search item image"""
+    url: str
+    """Search item url to anime page"""
+
+    @abstractmethod
+    def get_anime(self):
+        """get anime"""
+        pass
+
+    @abstractmethod
+    async def a_get_anime(self):
+        """get anime in async mode"""
+        pass
+
+    def __str__(self):
+        return self.title
 
 @define(kw_only=True)
 class BaseSearch(_HttpExtension):
