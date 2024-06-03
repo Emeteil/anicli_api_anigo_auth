@@ -203,7 +203,7 @@ class LibraryView(_BaseStructParser):
             self._cached_result.append(
                 {
                     "title": self._parse_title(part),
-                    "thumbnail": "",
+                    "thumbnail": self._parse_thumbnail(part),
                     "url": self._parse_url(part),
                 }
             )
@@ -217,6 +217,12 @@ class LibraryView(_BaseStructParser):
         var_2 = var_1.xpath('text()').get()
         return var_2
 
+    def _parse_thumbnail(self, doc: Selector):
+        var_0 = doc
+        var_1 = var_0.css(".text-left img")
+        var_2 = var_1.attrib["src"]
+        return var_2
+    
     def _parse_url(self, doc: Selector):
         var_0 = doc
         var_1 = var_0.css(".table-100 a")
@@ -250,7 +256,7 @@ class AnimeView(_BaseStructParser):
     def _start_parse(self):
         self._cached_result.clear()
         self._cached_result["title"] = self._parse_title(self.__selector__)
-        self._cached_result["description"] = self._parse_description(self.__selector__)
+        self._cached_result["description"] = self._parse_description(self.__selector__).strip()
         self._cached_result["thumbnail"] = self._parse_thumbnail(self.__selector__)
         self._cached_result["id"] = self._parse_id(self.__selector__)
         self._cached_result["raw_json"] = self._parse_raw_json(self.__selector__)

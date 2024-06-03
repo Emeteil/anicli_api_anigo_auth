@@ -321,7 +321,7 @@ class Anime(BaseAnime):
 
     def get_json_info(self):
         return Selector(self.raw_json, type="json").getall()[0]
-        
+    
     async def a_get_episodes(self):
         resp = await self.http_async.get(f"https://animego.org/anime/{self.id}/player?_allow=true")
         resp = resp.json()["content"]
