@@ -58,7 +58,7 @@ class Profile():
             json = resp.json()
             content += json["content"]
             if json["endPage"]: break
-            i+=1
+            i += 1
         data = LibraryView(content).parse().view()
         return [Library(**d, http = self.http, http_async = self.http_async) for d in data]
         
@@ -71,8 +71,7 @@ class Profile():
             json = resp.json()
             content += json["content"]
             if json["endPage"]: break
-            print(i)
-            i+=1
+            i += 1
         data = LibraryView(content).parse().view()
         return [Library(**d, http = self.http, http_async = self.http_async) for d in data]
     
