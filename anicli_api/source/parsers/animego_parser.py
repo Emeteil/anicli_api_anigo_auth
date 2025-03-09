@@ -40,7 +40,7 @@ class _BaseStructParser:
 class OngoingView(_BaseStructParser):
     """Get all available ongoings from main page
 
-        GET https://animego.org
+        GET https://animego.club
 
         OngoingView view() item signature:
 
@@ -86,7 +86,7 @@ class OngoingView(_BaseStructParser):
         var_1 = var_0.attrib["onclick"]
         var_2 = var_1.lstrip("location.href=")
         var_3 = var_2.strip("'")
-        var_4 = "https://animego.org{}".format(var_3)
+        var_4 = "https://animego.club{}".format(var_3)
         return var_4
 
     def _parse_title(self, doc: Selector):
@@ -122,12 +122,12 @@ class OngoingView(_BaseStructParser):
 class SearchView(_BaseStructParser):
     """Get all search results by query
 
-        GET https://animego.org/search/anime
+        GET https://animego.club/search/anime
         q={QUERY}
 
         EXAMPLE:
 
-            GET https://animego.org/search/anime?q=LAIN
+            GET https://animego.club/search/anime?q=LAIN
 
         SearchView view() item signature:
 
@@ -227,16 +227,16 @@ class LibraryView(_BaseStructParser):
         var_0 = doc
         var_1 = var_0.css(".table-100 a")
         var_2 = var_1.attrib["href"]
-        return "https://animego.org" + var_2
+        return "https://animego.club" + var_2
 
 class AnimeView(_BaseStructParser):
     """Anime page information. anime path contains in SearchView.url or Ongoing.urk
 
-        GET https://animego.org/anime/<ANIME_PATH>
+        GET https://animego.club/anime/<ANIME_PATH>
 
         EXAMPLE:
 
-            GET https://animego.org/anime/eksperimenty-leyn-1114
+            GET https://animego.club/anime/eksperimenty-leyn-1114
 
         AnimeView view() item signature:
 
@@ -322,12 +322,12 @@ class DubbersView(_BaseStructParser):
 
         Prepare:
           1. get id from Anime object
-          2. GET 'https://animego.org/anime/{Anime.id}/player?_allow=true'
+          2. GET 'https://animego.club/anime/{Anime.id}/player?_allow=true'
           3. extract html from json by ['content'] key
           4. OPTIONAL: unescape HTML
 
         EXAMPLE:
-            GET https://animego.org/anime/anime/1114//player?_allow=true
+            GET https://animego.club/anime/anime/1114//player?_allow=true
 
         DubbersView view() item signature:
 
@@ -382,12 +382,12 @@ class EpisodeView(_BaseStructParser):
 
         Prepare:
           1. get id from Anime object
-          2. GET 'https://animego.org/anime/{Anime.id}/player?_allow=true'
+          2. GET 'https://animego.club/anime/{Anime.id}/player?_allow=true'
           3. extract html from json by ['content'] key
           4. OPTIONAL: unescape HTML
 
         EXAMPLE:
-            GET https://animego.org/anime/anime/1114//player?_allow=true
+            GET https://animego.club/anime/anime/1114//player?_allow=true
 
         EpisodeView view() item signature:
 
@@ -451,7 +451,7 @@ class SourceView(_BaseStructParser):
 
           2.
 
-          GET https://animego.org/anime/series
+          GET https://animego.club/anime/series
           dubbing=2&provider=24&episode={Episode.num}id={Episode.id}
 
           3. extract html from json by ["content"] key
@@ -460,7 +460,7 @@ class SourceView(_BaseStructParser):
 
         EXAMPLE:
 
-            GET https://animego.org/anime/series?dubbing=2&provider=24&episode=2&id=15837
+            GET https://animego.club/anime/series?dubbing=2&provider=24&episode=2&id=15837
 
         SourceView view() item signature:
 
