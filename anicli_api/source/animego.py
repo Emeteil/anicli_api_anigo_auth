@@ -60,6 +60,10 @@ class Profile():
             if json["endPage"]: break
             i += 1
         data = LibraryView(content).parse().view()
+        
+        for d in data:
+            d.url = d.url.replace("animego.org", "animego.club")
+        
         return [Library(**d, http = self.http, http_async = self.http_async) for d in data]
         
     async def _a_get_anime(self, type: str = ""):
@@ -73,6 +77,10 @@ class Profile():
             if json["endPage"]: break
             i += 1
         data = LibraryView(content).parse().view()
+        
+        for d in data:
+            d.url = d.url.replace("animego.org", "animego.club")
+            
         return [Library(**d, http = self.http, http_async = self.http_async) for d in data]
     
     def get_all_anime(self): return self._get_anime()
