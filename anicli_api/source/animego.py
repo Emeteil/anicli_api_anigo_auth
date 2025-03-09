@@ -62,7 +62,7 @@ class Profile():
         data = LibraryView(content).parse().view()
         
         for d in data:
-            d.url = d.url.replace("animego.org", "animego.club")
+            d["url"] = d["url"].replace("animego.org", "animego.club")
         
         return [Library(**d, http = self.http, http_async = self.http_async) for d in data]
         
@@ -79,7 +79,7 @@ class Profile():
         data = LibraryView(content).parse().view()
         
         for d in data:
-            d.url = d.url.replace("animego.org", "animego.club")
+            d["url"] = d["url"].replace("animego.org", "animego.club")
             
         return [Library(**d, http = self.http, http_async = self.http_async) for d in data]
     
