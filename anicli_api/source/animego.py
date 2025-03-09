@@ -29,14 +29,14 @@ def set_PHPSESSID(key: str) -> None:
 
 def _is_authorized() -> bool:
     http_client = HTTPSync(cookies = {"PHPSESSID": _PHPSESSID}, follow_redirects = True)
-    return _PHPSESSID and (http_client.get("https://animego.org/profile/").status_code != 500)
+    return _PHPSESSID and (http_client.get("https://animego.club/profile/").status_code != 500)
 
 class AuthorizationError(Exception):
     def __init__(self, message="PHPSESSID is missing!"):
         super().__init__(message)
 
 class Profile():
-    BASE_URL = "https://animego.org"
+    BASE_URL = "https://animego.club"
     
     def __init__(self, nickname: str = None, http: "Client" = HTTPSync(), http_async: "AsyncClient" = HTTPAsync()):
         if not nickname:
@@ -92,7 +92,7 @@ class Profile():
     async def a_get_rewatching_anime(self): return await self._a_get_anime("rewatching")
 
 class Extractor(BaseExtractor):
-    BASE_URL = "https://animego.org"
+    BASE_URL = "https://animego.club"
     
     def __init__(self, http_client: "Client" = HTTPSync(), http_async_client: "AsyncClient" = HTTPAsync()):
         if not _is_authorized():
@@ -191,7 +191,7 @@ class Search(BaseSearch):
     @staticmethod
     def _is_valid_page(resp: Response):
         # RKN blocks issues eg:
-        # https://animego.org/anime/ya-predpochitayu-zlodeyku-2413
+        # https://animego.club/anime/ya-predpochitayu-zlodeyku-2413
         # but API requests MAYBE still works.
         if resp.is_success:
             return True
@@ -243,7 +243,7 @@ class Ongoing(BaseOngoing):
     @staticmethod
     def _is_valid_page(resp: Response):
         # RKN blocks issues eg:
-        # https://animego.org/anime/ya-predpochitayu-zlodeyku-2413
+        # https://animego.club/anime/ya-predpochitayu-zlodeyku-2413
         # but API requests MAYBE still works.
         if resp.is_success:
             return True
@@ -307,7 +307,7 @@ class Anime(BaseAnime):
         sel = Selector(response)
         # RKN issue: maybe title not available in your country
         # eg:
-        # https://animego.org/anime/vtorzhenie-gigantov-2-17
+        # https://animego.club/anime/vtorzhenie-gigantov-2-17
         # this title API request don't work in RU ip
         if sel.css("div.player-blocked").get():
             _logger.error("API not available in your country. Element: %s", sel.css("div.h5").get())
@@ -315,55 +315,55 @@ class Anime(BaseAnime):
         return True
 
     def get_episodes(self):
-        resp = self.http.get(f"https://animego.org/anime/{self.id}/player?_allow=true").json()["content"]
+        resp = self.http.get(f"https://animego.club/anime/{self.id}/player?_allow=true").json()["content"]
         return self._extract(resp) if self._episodes_is_available(resp) else []
 
     def get_json_info(self):
         return Selector(self.raw_json, type="json").getall()[0]
     
     async def a_get_episodes(self):
-        resp = await self.http_async.get(f"https://animego.org/anime/{self.id}/player?_allow=true")
+        resp = await self.http_async.get(f"https://animego.club/anime/{self.id}/player?_allow=true")
         resp = resp.json()["content"]
         return self._extract(resp) if self._episodes_is_available(resp) else []
 
     def set_rate(self, stars: int) -> bool:
         """rate the anime sync"""
         if not _PHPSESSID: raise AuthorizationError()
-        resp = self.http.post(f"https://animego.org/rating/{self.id}/{stars}/anime/vote")
+        resp = self.http.post(f"https://animego.club/rating/{self.id}/{stars}/anime/vote")
         return (resp.status_code == 200) and (resp.json()['status'] == "success")
     
     async def a_set_rate(self, stars: int) -> bool:
         """rate the anime async"""
         if not _PHPSESSID: raise AuthorizationError()
-        resp = await self.http_async.post(f"https://animego.org/rating/{self.id}/{stars}/anime/vote")
+        resp = await self.http_async.post(f"https://animego.club/rating/{self.id}/{stars}/anime/vote")
         return (resp.status_code == 200) and (resp.json()['status'] == "success")
     
     def get_view_status(self):
         """get all the viewing status for anime sync"""
         if not _PHPSESSID: raise AuthorizationError()
         url: str = self.get_json_info()['url']
-        resp = self.http.get(f"https://animego.org{url}")
+        resp = self.http.get(f"https://animego.club{url}")
         return AnimeView.parse_view_status(Selector(resp.text))
         
     async def a_get_view_status(self):
         """get all the viewing status for anime async"""
         if not _PHPSESSID: raise AuthorizationError()
         url: str = self.get_json_info()['url']
-        resp = await self.http_async.get(f"https://animego.org{url}")
+        resp = await self.http_async.get(f"https://animego.club{url}")
         return AnimeView.parse_view_status(Selector(resp.text))
     
     def set_view_status(self, status: int = 1):
         """set the viewing status for anime sync"""
         if status not in [1,2,3,4,5,6]: raise ValueError()
         if not _PHPSESSID: raise AuthorizationError()
-        resp = self.http.post(f"https://animego.org/animelist/{self.id}/{status}/add")
+        resp = self.http.post(f"https://animego.club/animelist/{self.id}/{status}/add")
         return (resp.status_code == 200) and (resp.json()['status'] == "success")
         
     async def a_set_view_status(self, status: int = 1):
         """set the viewing status for anime async"""
         if status not in [1,2,3,4,5,6]: raise ValueError()
         if not _PHPSESSID: raise AuthorizationError()
-        resp = await self.http_async.post(f"https://animego.org/animelist/{self.id}/{status}/add")
+        resp = await self.http_async.post(f"https://animego.club/animelist/{self.id}/{status}/add")
         return (resp.status_code == 200) and (resp.json()['status'] == "success")
 
 @define(kw_only=True)
@@ -385,7 +385,7 @@ class Episode(BaseEpisode):
     
     def _get_series_data(self):
         resp = self.http.get(
-            "https://animego.org/anime/series",
+            "https://animego.club/anime/series",
             params={"dubbing": 2, "provider": 24, "episode": self.num, "id": self.id},
         ).json()
         return resp
@@ -393,7 +393,7 @@ class Episode(BaseEpisode):
     async def _a_get_series_data(self):
         resp = (
             await self.http_async.get(
-                "https://animego.org/anime/series",
+                "https://animego.club/anime/series",
                 params={"dubbing": 2, "provider": 24, "episode": self.num, "id": self.id},
             )
         ).json()
@@ -408,13 +408,13 @@ class Episode(BaseEpisode):
     
     def make_viewed(self):
         if not _PHPSESSID: raise AuthorizationError()
-        resp = self.http.post(f"https://animego.org/anime/episode/{self.id}/watched")
+        resp = self.http.post(f"https://animego.club/anime/episode/{self.id}/watched")
         if resp.status_code != 200: raise HTTPStatusError()
         return resp.json()['message'] == "create"
     
     async def a_make_viewed(self):
         if not _PHPSESSID: raise AuthorizationError()
-        resp = await self.http_async.post(f"https://animego.org/anime/episode/{self.id}/watched")
+        resp = await self.http_async.post(f"https://animego.club/anime/episode/{self.id}/watched")
         if resp.status_code != 200: raise HTTPStatusError()
         return resp.json()['message'] == "create"
     
